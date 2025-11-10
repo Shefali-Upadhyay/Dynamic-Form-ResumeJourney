@@ -27,7 +27,6 @@ export default function DynamicForm() {
   const [currentStageIndex, setCurrentStageIndex] = useState(0);
   const [errors, setErrors] = useState({});
 
-  // Utility: Format stage titles
   const formatTitle = (str) =>
     str
       .replace(/([A-Z])/g, " $1")
@@ -62,7 +61,7 @@ export default function DynamicForm() {
         id,
         fields: formConfig.filter((f) => f.stageId === id),
       })),
-    []
+    [],
   );
 
   // Save data & stage on changes
@@ -77,43 +76,62 @@ export default function DynamicForm() {
     navigate({ search: p.toString() }, { replace: true });
   }, [currentStageIndex, userId, navigate, stages, values, location.search]);
 
-  // Stage validation
+  // Per-field validation
+  const validateField = (fieldId, value) => {
+    const field = formConfig.find((f) => f.id === fieldId);
+    if (!field) return null;
+
+    if (field.required && (!value || value.toString().trim() === "")) {
+      return `${field.label} is required`;
+    }
+
+    if (field.validation?.pattern && value) {
+      try {
+        const re = new RegExp(field.validation.pattern);
+        if (!re.test(value)) return field.validation.message || "Invalid value";
+      } catch (e) {
+        console.error("Bad regex:", field.validation.pattern, e);
+      }
+    }
+
+    if (
+      field.minLength &&
+      typeof value === "string" &&
+      value.trim().length < field.minLength
+    ) {
+      return `${field.label} must be at least ${field.minLength} characters`;
+    }
+
+    if (
+      field.maxLength &&
+      typeof value === "string" &&
+      value.trim().length > field.maxLength
+    ) {
+      return `${field.label} must be at most ${field.maxLength} characters`;
+    }
+
+    return null;
+  };
+
+  const handleFieldChange = (fieldId, value) => {
+    dispatch(setAll({ ...values, [fieldId]: value }));
+    const error = validateField(fieldId, value);
+    setErrors((prev) => ({ ...prev, [fieldId]: error }));
+  };
+
+  // Stage-level validation before Next
   const validateStage = (index) => {
     const st = stages[index];
     const stageErrors = {};
     for (const f of st.fields) {
       const val = values[f.id];
-      const isEmpty =
-        val === undefined ||
-        val === null ||
-        (typeof val === "string" && val.trim() === "");
-
-      if (f.required && isEmpty) {
-        stageErrors[f.id] = `${f.label} is required`;
-        continue;
-      }
-
-      if (f.validation?.pattern && val) {
-        try {
-          const re = new RegExp(f.validation.pattern);
-          if (!re.test(val)) stageErrors[f.id] = f.validation.message || "Invalid value";
-        } catch (e) {
-          console.error("Bad regex:", f.validation.pattern, e);
-        }
-      }
-
-      if (f.minLength && typeof val === "string" && val.trim().length < f.minLength) {
-        stageErrors[f.id] = `${f.label} must be at least ${f.minLength} characters`;
-      }
-      if (f.maxLength && typeof val === "string" && val.trim().length > f.maxLength) {
-        stageErrors[f.id] = `${f.label} must be at most ${f.maxLength} characters`;
-      }
+      const error = validateField(f.id, val);
+      if (error) stageErrors[f.id] = error;
     }
     setErrors(stageErrors);
     return Object.keys(stageErrors).length === 0;
   };
 
-  // Navigation
   const goNext = () => {
     if (!validateStage(currentStageIndex)) return;
     setCurrentStageIndex((i) => Math.min(i + 1, stages.length - 1));
@@ -124,18 +142,13 @@ export default function DynamicForm() {
     if (idx !== -1) setCurrentStageIndex(idx);
   };
 
-  // Quit
   const handleQuit = () => {
     if (!window.confirm("Exit and save progress?")) return;
     navigate("/");
   };
 
-  // Final submission
   const handleSubmit = () => {
     console.log("Final submission:", values);
-    if (!userId) return;
-    // localStorage.removeItem(`formData-${userId}`);
-    // localStorage.removeItem(`formStage-${userId}`);
     dispatch(reset());
     navigate("/");
   };
@@ -171,9 +184,14 @@ export default function DynamicForm() {
                     marginBottom: 8,
                   }}
                 >
-                  <div style={{ display: "flex", justifyContent: "space-between" }}>
+                  <div
+                    style={{ display: "flex", justifyContent: "space-between" }}
+                  >
                     <strong>{formatTitle(sid)}</strong>
-                    <button className="button ghost" onClick={() => goToStage(sid)}>
+                    <button
+                      className="button ghost"
+                      onClick={() => goToStage(sid)}
+                    >
                       Edit
                     </button>
                   </div>
@@ -183,8 +201,13 @@ export default function DynamicForm() {
                       return (
                         <div key={f.id} style={{ marginBottom: 6 }}>
                           <strong>{f.label}:</strong>{" "}
-                          {typeof val === "string" && val.startsWith("data:image") ? (
-                            <img src={val} alt={f.label} style={{ width: 120 }} />
+                          {typeof val === "string" &&
+                          val.startsWith("data:image") ? (
+                            <img
+                              src={val}
+                              alt={f.label}
+                              style={{ width: 120 }}
+                            />
                           ) : (
                             val || "-"
                           )}
@@ -197,10 +220,21 @@ export default function DynamicForm() {
             })}
           </div>
         ) : (
-          <Stage fields={stages[currentStageIndex].fields} errors={errors} />
+          <Stage
+            fields={stages[currentStageIndex].fields}
+            errors={errors}
+            onFieldChange={handleFieldChange}
+          />
         )}
 
-        <div className="footer-actions" style={{ display: "flex", justifyContent: "space-between", marginTop: 16 }}>
+        <div
+          className="footer-actions"
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            marginTop: 16,
+          }}
+        >
           <div>
             {currentStageIndex > 0 && (
               <button className="button ghost" onClick={goPrev}>

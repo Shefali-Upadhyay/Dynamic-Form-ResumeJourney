@@ -2,13 +2,14 @@ import React from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { setField } from "../redux/formSlice";
 
-export default function TextInput({ field, error }) {
+export default function TextInput({ field, error, onFieldChange }) {
   const dispatch = useDispatch();
   const value = useSelector((s) => s.form.values[field.id] ?? "");
 
-  const onChange = (e) => {
+  const handleChange = (e) => {
     const v = e.target.value;
     dispatch(setField({ id: field.id, value: v }));
+    onFieldChange(field.id, v);
     try {
       const params = new URLSearchParams(window.location.search);
       const uid = params.get("userId");
@@ -31,7 +32,7 @@ export default function TextInput({ field, error }) {
       <input
         className="input"
         value={value}
-        onChange={onChange}
+        onChange={handleChange}
         type={field.inputType || "text"}
       />
       {error && <div className="error">{error}</div>}

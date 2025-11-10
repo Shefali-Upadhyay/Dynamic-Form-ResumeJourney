@@ -5,11 +5,11 @@ import SelectInput from "./SelectInput";
 import RadioGroup from "./RadioGroup";
 import SelfieCapture from "./SelfieCapture";
 
-export default function Stage({ fields, errors }) {
+export default function Stage({ fields, errors, onFieldChange }) {
   return (
     <div>
       {fields.map((f) => {
-        const props = { field: f, error: errors[f.id] };
+        const props = { field: f, error: errors[f.id], onFieldChange };
         switch (f.componentType) {
           case "input":
             return <TextInput key={f.id} {...props} />;

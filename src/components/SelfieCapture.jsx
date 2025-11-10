@@ -2,7 +2,7 @@ import React, { useRef, useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { setField } from "../redux/formSlice";
 
-export default function SelfieCapture({ field, onChange }) {
+export default function SelfieCapture({ field, error, onFieldChange }) {
   const dispatch = useDispatch();
   const storedValue = useSelector((s) => s.form.values[field.id] || "");
 
@@ -14,9 +14,7 @@ export default function SelfieCapture({ field, onChange }) {
   const canvasRef = useRef(null);
   const streamRef = useRef(null);
 
-  useEffect(() => {
-    return () => stopCamera();
-  }, []);
+  useEffect(() => () => stopCamera(), []);
 
   useEffect(() => {
     if (storedValue) {
@@ -32,7 +30,7 @@ export default function SelfieCapture({ field, onChange }) {
   const updateValue = (val) => {
     dispatch(setField({ id: field.id, value: val }));
     setPreview(val);
-    onChange && onChange(field, val);
+    onFieldChange && onFieldChange(field.id, val);
   };
 
   const initCamera = async () => {
@@ -48,7 +46,7 @@ export default function SelfieCapture({ field, onChange }) {
       video.onloadedmetadata = async () => {
         try {
           await video.play();
-        } catch (e) {
+        } catch {
           setTimeout(() => video.play(), 200);
         }
       };
@@ -96,7 +94,6 @@ export default function SelfieCapture({ field, onChange }) {
     setPreview(null);
     setCapturing(true);
   };
-
   const startCamera = () => {
     setPreview(null);
     setCameraError("");
@@ -169,6 +166,7 @@ export default function SelfieCapture({ field, onChange }) {
           {cameraError && <div style={{ color: "red" }}>{cameraError}</div>}
         </>
       )}
+      {error && <div className="error">{error}</div>}
     </div>
   );
 }
