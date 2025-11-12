@@ -26,6 +26,7 @@ export default function DynamicForm() {
   const values = useSelector((s) => s.form.values);
   const [currentStageIndex, setCurrentStageIndex] = useState(0);
   const [errors, setErrors] = useState({});
+  const [showQuitPopup, setShowQuitPopup] = useState(false);
 
   const formatTitle = (str) =>
     str
@@ -61,7 +62,7 @@ export default function DynamicForm() {
         id,
         fields: formConfig.filter((f) => f.stageId === id),
       })),
-    [],
+    []
   );
 
   // Save data & stage on changes
@@ -119,7 +120,6 @@ export default function DynamicForm() {
     setErrors((prev) => ({ ...prev, [fieldId]: error }));
   };
 
-  // Stage-level validation before Next
   const validateStage = (index) => {
     const st = stages[index];
     const stageErrors = {};
@@ -143,8 +143,16 @@ export default function DynamicForm() {
   };
 
   const handleQuit = () => {
-    if (!window.confirm("Exit and save progress?")) return;
+    setShowQuitPopup(true);
+  };
+
+  const confirmQuit = () => {
+    setShowQuitPopup(false);
     navigate("/");
+  };
+
+  const cancelQuit = () => {
+    setShowQuitPopup(false);
   };
 
   const handleSubmit = () => {
@@ -253,6 +261,24 @@ export default function DynamicForm() {
           </div>
         </div>
       </div>
+
+      {/* Quit Confirmation Popup */}
+      {showQuitPopup && (
+        <div className="popup-overlay">
+          <div className="popup">
+            <h3>Exit Form?</h3>
+            <p>Your progress will be saved. Do you want to exit?</p>
+            <div className="popup-buttons">
+              <button className="button ghost" onClick={cancelQuit}>
+                Cancel
+              </button>
+              <button className="button primary" onClick={confirmQuit}>
+                Exit
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
