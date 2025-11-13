@@ -5,6 +5,7 @@ import { setAll, reset } from "../redux/formSlice";
 import Stage from "../components/Stage";
 import { formConfig } from "../utils/formConfig";
 import { saveData, saveStage, loadData, loadStage } from "../utils/storage";
+import Popup from "../components/Popup"; // ✅ added import
 
 const STAGE_ORDER = [
   "basicDetails",
@@ -62,7 +63,7 @@ export default function DynamicForm() {
         id,
         fields: formConfig.filter((f) => f.stageId === id),
       })),
-    []
+    [],
   );
 
   // Save data & stage on changes
@@ -142,18 +143,12 @@ export default function DynamicForm() {
     if (idx !== -1) setCurrentStageIndex(idx);
   };
 
-  const handleQuit = () => {
-    setShowQuitPopup(true);
-  };
-
+  const handleQuit = () => setShowQuitPopup(true);
   const confirmQuit = () => {
     setShowQuitPopup(false);
     navigate("/");
   };
-
-  const cancelQuit = () => {
-    setShowQuitPopup(false);
-  };
+  const cancelQuit = () => setShowQuitPopup(false);
 
   const handleSubmit = () => {
     console.log("Final submission:", values);
@@ -162,6 +157,26 @@ export default function DynamicForm() {
   };
 
   const isReviewStage = stages[currentStageIndex].id === "review";
+
+  const isStageComplete = (index) => {
+    const st = stages[index];
+    for (const f of st.fields) {
+      if (f.required) {
+        const val = values[f.id];
+        const error = validateField(f.id, val);
+        if (!val || error) return false;
+      }
+    }
+    return true;
+  };
+
+  const handleNextClick = () => {
+    if (!isStageComplete(currentStageIndex)) {
+      validateStage(currentStageIndex); // show all missing/invalid field errors
+      return;
+    }
+    goNext();
+  };
 
   return (
     <div className="app">
@@ -252,9 +267,19 @@ export default function DynamicForm() {
           </div>
           <div>
             <button
-              className="button primary"
-              style={{ marginLeft: 8 }}
-              onClick={isReviewStage ? handleSubmit : goNext}
+              className={`button ${isStageComplete(currentStageIndex) ? "primary" : "disabled-look"}`}
+              style={{
+                marginLeft: 8,
+                backgroundColor: isStageComplete(currentStageIndex)
+                  ? "#007bff"
+                  : "#b0b0b0",
+                borderColor: isStageComplete(currentStageIndex)
+                  ? "#007bff"
+                  : "#b0b0b0",
+                color: "white",
+                cursor: "pointer",
+              }}
+              onClick={isReviewStage ? handleSubmit : handleNextClick}
             >
               {isReviewStage ? "Submit" : "Next"}
             </button>
@@ -264,20 +289,14 @@ export default function DynamicForm() {
 
       {/* Quit Confirmation Popup */}
       {showQuitPopup && (
-        <div className="popup-overlay">
-          <div className="popup">
-            <h3>Exit Form?</h3>
-            <p>Your progress will be saved. Do you want to exit?</p>
-            <div className="popup-buttons">
-              <button className="button ghost" onClick={cancelQuit}>
-                Cancel
-              </button>
-              <button className="button primary" onClick={confirmQuit}>
-                Exit
-              </button>
-            </div>
-          </div>
-        </div>
+        <Popup
+          title="Exit Form?"
+          message="Your progress will be saved. Do you want to exit?"
+          onConfirm={confirmQuit}
+          onCancel={cancelQuit}
+          confirmText="Exit"
+          cancelText="Cancel"
+        />
       )}
     </div>
   );

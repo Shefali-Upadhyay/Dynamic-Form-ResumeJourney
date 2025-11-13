@@ -188,12 +188,33 @@ select {
   width: 100%;
 }
 
-/* stacked phone */
+/* Phone row container */
 .phone-row {
   display: flex;
-  flex-direction: column;
-  gap: 8px;
+  align-items: flex-end;
+  gap: 12px;
 }
+
+/* Make both fields flex children */
+.phone-row .form-row {
+  margin-bottom: 0;
+}
+
+/* Make the country code narrower */
+.phone-row .form-row:first-child {
+  flex: 0 0 120px; /* fixed width for country code */
+}
+
+/* Phone number gets remaining space */
+.phone-row .form-row:last-child {
+  flex: 1;
+}
+
+/* Consistent spacing for labels and inputs */
+.phone-row .form-row .label {
+  margin-bottom: 6px;
+}
+
 .popup-overlay {
   position: fixed;
   top: 0;
@@ -224,4 +245,18 @@ select {
   margin-top: 20px;
   display: flex;
   justify-content: space-around;
+}
+.button.primary {
+  background-color: #007bff;
+  border: 1px solid #007bff;
+  color: white;
+  transition: all 0.3s ease;
+}
+
+.button.disabled-look {
+  background-color: #b0b0b0 !important;
+  border: 1px solid #b0b0b0 !important;
+  color: white !important;
+  cursor: pointer !important;
+  opacity: 1 !important;
 }
